@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from google.adk import Agent, Workflow
 from google.adk.models import Gemini
+from google.adk.workflow import DEFAULT_ROUTE
 from google.genai import types
 
 from . import config
@@ -57,15 +58,18 @@ def build_workflow(triage_model=None, draft_model=None, judge_model=None) -> Wor
         instruction=JUDGE_INSTRUCTION,
     )
 
+    # Fail closed: if a node ever emits a route that no edge matches, ADK only logs a
+    # warning and the run ends with no decision. DEFAULT_ROUTE sends such a ticket to a
+    # human (or, after save_draft, to the validator, which will escalate it).
     return Workflow(
         name="helpdesk_copilot",
         edges=[
             ("START", intake, retrieve, triage_agent, route_triage),
-            (route_triage, {"draft": draft_agent, "escalate": escalate}),
+            (route_triage, {"draft": draft_agent, DEFAULT_ROUTE: escalate}),
             (draft_agent, save_draft),
-            (save_draft, {"judge": judge_agent, "skip": validate}),
+            (save_draft, {"judge": judge_agent, DEFAULT_ROUTE: validate}),
             (judge_agent, validate),
-            (validate, {"deliver": deliver, "escalate": escalate}),
+            (validate, {"deliver": deliver, DEFAULT_ROUTE: escalate}),
         ],
     )
 

@@ -67,7 +67,19 @@ def intake(node_input: Any, ctx: Context):
     ticket = _as_text(node_input).strip()
     return Event(
         output=ticket,
-        state={"ticket": ticket, "trail": [{"step": "intake", "t": round(time.time(), 3), "chars": len(ticket)}]},
+        state={
+            "ticket": ticket,
+            "trail": [{"step": "intake", "t": round(time.time(), 3), "chars": len(ticket)}],
+            # Session state survives between tickets in the same chat session.
+            # Reset every per-ticket field here, so a new ticket can never see the
+            # draft, evidence or reasons of the previous one.
+            "draft": None,
+            "triage": None,
+            "triage_summary": "",
+            "reasons": [],
+            "passages": [],
+            "passages_text": "",
+        },
     )
 
 
