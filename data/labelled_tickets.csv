@@ -1,0 +1,22 @@
+ticket,queue,ticket_type,priority
+"I bought the annual plan 10 days ago and want a refund. Is that possible?",billing,question,P3
+"Please refund the add-on I was charged for yesterday.",billing,request,P3
+"I can't find my invoice for last quarter. Where do I download it?",billing,question,P4
+"My payment failed twice and now my workspace says it will be downgraded.",billing,incident,P2
+"Can you change the company name on our invoices?",billing,request,P3
+"I was charged 800 USD for overage and I do not understand why.",billing,question,P3
+"The dashboard shows a blank page after I sign in. Other people on my team see the same.",technical,incident,P2
+"Your API returns a 500 error on every request since this morning.",technical,incident,P1
+"Is the service down? Nothing loads for me.",technical,incident,P2
+"Search is very slow in our workspace since last week.",technical,incident,P3
+"How do I connect your product to Slack?",technical,question,P4
+"I forgot my password and the reset link has expired.",account,request,P3
+"My account is locked after too many sign-in attempts.",account,incident,P3
+"I no longer have access to the email address on my account and cannot sign in.",account,request,P2
+"How can I export all our workspace data as CSV?",account,question,P4
+"Please add my colleague as a workspace admin.",account,request,P3
+"Someone logged in to my account from another country and changed my settings.",security,incident,P1
+"I think I found a vulnerability in your login form. Who should I tell?",security,request,P2
+"We got a phishing email that looks like it came from your company.",security,incident,P2
+"Do you have a partner program for agencies?",general,question,P4
+"What are your office hours for phone support?",general,question,P4

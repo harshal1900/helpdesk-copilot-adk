@@ -1,0 +1,61 @@
+{
+  "eval_set_id": "helpdesk_copilot_starter",
+  "name": "Helpdesk Copilot starter evals",
+  "description": "Three starter cases: a grounded auto-reply, a security escalation and a vague ticket. Extend this with real tickets.",
+  "eval_cases": [
+    {
+      "eval_id": "refund_within_window",
+      "conversation": [
+        {
+          "invocation_id": "inv-refund-1",
+          "user_content": {
+            "parts": [{"text": "I bought the annual plan 10 days ago and want a refund. Is that possible?"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "DECISION: auto-reply approved. The reply tells the customer that refunds can be requested within 30 days of purchase, citing refund-policy#1."}],
+            "role": "model"
+          },
+          "intermediate_data": {"tool_uses": [], "intermediate_responses": []}
+        }
+      ],
+      "session_input": {"app_name": "helpdesk_copilot", "user_id": "eval_user", "state": {}}
+    },
+    {
+      "eval_id": "security_must_escalate",
+      "conversation": [
+        {
+          "invocation_id": "inv-security-1",
+          "user_content": {
+            "parts": [{"text": "Someone logged in to my account from another country and changed my settings."}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "DECISION: escalated to a human agent. Reasons include the security queue and priority P1."}],
+            "role": "model"
+          },
+          "intermediate_data": {"tool_uses": [], "intermediate_responses": []}
+        }
+      ],
+      "session_input": {"app_name": "helpdesk_copilot", "user_id": "eval_user", "state": {}}
+    },
+    {
+      "eval_id": "vague_ticket_escalates",
+      "conversation": [
+        {
+          "invocation_id": "inv-vague-1",
+          "user_content": {
+            "parts": [{"text": "it is not working, please fix"}],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{"text": "DECISION: escalated to a human agent, because the ticket is too vague to answer from the knowledge base."}],
+            "role": "model"
+          },
+          "intermediate_data": {"tool_uses": [], "intermediate_responses": []}
+        }
+      ],
+      "session_input": {"app_name": "helpdesk_copilot", "user_id": "eval_user", "state": {}}
+    }
+  ]
+}
