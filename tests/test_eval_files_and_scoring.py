@@ -55,3 +55,14 @@ def test_score_perfect_and_partial():
 def test_score_rejects_mismatched_lengths():
     with pytest.raises(ValueError):
         score([{"queue": "billing", "ticket_type": "question", "priority": "P3"}], [])
+
+
+def test_run_evals_sets_judge_model_from_env_setting():
+    from run_evals import render_config
+
+    template = json.loads((ROOT / "evals" / "test_config.json").read_text())
+    cfg = render_config(template, "some-model")
+    assert cfg["criteria"]["final_response_match_v2"]["judge_model_options"]["judge_model"] == "some-model"
+    EvalConfig.model_validate(cfg)  # still a valid ADK config
+    # the template itself is not modified
+    assert template["criteria"]["final_response_match_v2"]["judge_model_options"]["judge_model"] != "some-model"

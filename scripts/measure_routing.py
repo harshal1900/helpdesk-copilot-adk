@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -42,13 +44,32 @@ def score(rows: list[dict], preds: list[Triage]) -> dict:
     }
 
 
+_client = None
+
+
+def _get_client():
+    """One client for all tickets, retrying temporary errors (503, 429) like the app does."""
+    global _client
+    if _client is None:
+        from google import genai
+        from google.genai import types
+
+        _client = genai.Client(  # reads GOOGLE_API_KEY from the environment
+            http_options=types.HttpOptions(
+                retry_options=types.HttpRetryOptions(
+                    attempts=config.LLM_RETRY_ATTEMPTS, initial_delay=2, max_delay=30
+                )
+            )
+        )
+    return _client
+
+
 def classify(ticket: str) -> Triage:
-    from google import genai
     from google.genai import types
 
-    client = genai.Client()  # reads GOOGLE_API_KEY from the environment
+    client = _get_client()
     resp = client.models.generate_content(
-        model=config.TRIAGE_MODEL,
+        model=config.ROUTING_MODEL,
         contents=ticket,
         config=types.GenerateContentConfig(
             system_instruction=TRIAGE_INSTRUCTION,
@@ -60,17 +81,51 @@ def classify(ticket: str) -> Triage:
     return Triage.model_validate_json(resp.text)
 
 
+def classify_with_wait(ticket: str, max_wait: float = 90.0, tries: int = 4) -> Triage:
+    """Free-tier models also have a per-minute limit (for example 5 requests a minute).
+    When Google says "retry in 23s" and that is short, wait and try again.
+    A long wait means the daily quota is gone, so the error is raised."""
+    for attempt in range(tries):
+        try:
+            return classify(ticket)
+        except Exception as exc:
+            if "RESOURCE_EXHAUSTED" not in str(exc) or attempt == tries - 1:
+                raise
+            m = re.search(r"retry in ([0-9.]+)s", str(exc))
+            wait = float(m.group(1)) + 1 if m else 15.0
+            if wait > max_wait:
+                raise
+            print(f"  per-minute limit, waiting {wait:.0f}s ...", flush=True)
+            time.sleep(wait)
+    raise RuntimeError("unreachable")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", default=str(Path(__file__).resolve().parent.parent / "data" / "labelled_tickets.csv"))
+    parser.add_argument("--limit", type=int, default=0, help="score only the first N tickets (saves quota)")
     args = parser.parse_args()
 
     with open(args.file, newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
-    preds = [classify(r["ticket"]) for r in rows]
+    if args.limit:
+        rows = rows[: args.limit]
+
+    preds: list[Triage] = []
+    for r in rows:
+        try:
+            preds.append(classify_with_wait(r["ticket"]))
+        except Exception as exc:  # a daily quota or a closed model: score what finished
+            print(f"Stopped after {len(preds)} of {len(rows)} tickets: {str(exc)[:300]}")
+            print("Quota is per model and per day on the free tier. Use --limit, set ROUTING_MODEL "
+                  "in .env to another model, wait for the reset, or enable billing.\n")
+            break
+    if not preds:
+        sys.exit(1)
+    rows = rows[: len(preds)]
     result = score(rows, preds)
 
-    print(f"Tickets: {result['n']}  (model: {config.TRIAGE_MODEL})")
+    print(f"Tickets: {result['n']}  (model: {config.ROUTING_MODEL})")
     for key in ("queue_accuracy", "ticket_type_accuracy", "priority_accuracy", "exact_match_accuracy"):
         print(f"{key:24s} {result[key]:.1%}")
     if result["queue_confusions"]:

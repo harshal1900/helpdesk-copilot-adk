@@ -19,6 +19,10 @@ CACHE_DIR = ROOT / ".cache"
 TRIAGE_MODEL = os.getenv("TRIAGE_MODEL", "gemini-3.5-flash")
 DRAFT_MODEL = os.getenv("DRAFT_MODEL", "gemini-3.5-flash")
 JUDGE_MODEL = os.getenv("JUDGE_MODEL", "gemini-3.5-flash")
+# Models used only by the evaluation scripts. Quotas are counted per model, so a
+# separate model keeps evals from using up the app's daily quota.
+EVAL_JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", JUDGE_MODEL)  # judge inside `adk eval`
+ROUTING_MODEL = os.getenv("ROUTING_MODEL", TRIAGE_MODEL)  # scripts/measure_routing.py
 
 EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "gemini")  # gemini | local
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
